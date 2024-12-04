@@ -118,7 +118,7 @@ base_file = st.file_uploader("Upload Base Template (.PNG only)", type="png")
 accessory_file = st.file_uploader("Upload Accessory Template (.PNG only)", type="png")
 
 if 'max_slider_value' not in st.session_state:
-    st.session_state.max_slider_value = 100
+    st.session_state.max_slider_value = 50
 
 st.markdown("""
     <style>
