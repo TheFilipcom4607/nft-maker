@@ -22,7 +22,6 @@ def resize_image(image, size=(512, 512)):
     return image.resize(size, Image.NEAREST)
 
 def create_color_variations(img, variations=5, avoid_colors=None, similarity_threshold=50):
-    """Create color variations for an input image."""
     data = img.load()
     width, height = img.size
     retain_colors = [(229, 170, 122), (207, 153, 112)]  
@@ -118,37 +117,67 @@ st.header("1. Upload Templates")
 base_file = st.file_uploader("Upload Base Template (.PNG only)", type="png")
 accessory_file = st.file_uploader("Upload Accessory Template (.PNG only)", type="png")
 
-st.header("2. Configure Variations")
-num_base_variations = st.slider("Number of Base Color Variations", 1, 100, 5)
-num_accessory_variations = st.slider("Number of Accessory Color Variations", 1, 100, 5)
-st.write("#### Total output: ", num_base_variations*num_accessory_variations, " images")
+if 'max_slider_value' not in st.session_state:
+    st.session_state.max_slider_value = 100
 
-if st.button("Generate"):
+st.markdown("""
+    <style>
+    .more-button {
+        background-color: #f0f0f0;
+        color: black;
+        border: none;
+        border-radius: 5px;
+        padding: 8px 15px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: normal;
+    }
+    .more-button:hover {
+        background-color: #e0e0e0;
+    }
+    .stButton > button.generate-button {
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        padding: 10px 20px;
+        border: none;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .stButton > button.generate-button:hover {
+        background-color: #0056b3;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+st.header("2. Configure Variations")
+num_unique_images = st.slider("Number of Unique nfts to Generate", 1, st.session_state.max_slider_value, 10)
+more_clicked = st.markdown('<button class="more-button">Moooreeee</button>', unsafe_allow_html=True)
+if st.session_state.get("increase_slider") or more_clicked:
+    st.session_state.max_slider_value += 50
+
+if st.button('Generate', key='generate'):
     if not base_file or not accessory_file:
         st.error("Please upload both base and accessory templates!")
     else:
         start_time = time.time() 
 
-        
         base_img = resize_image(Image.open(base_file).convert("RGBA"))
         accessory_img = resize_image(Image.open(accessory_file).convert("RGBA"))
 
-        
         avoid_colors = [(229, 170, 122), (207, 153, 112)]
-        base_variations = create_color_variations(base_img, num_base_variations, avoid_colors)
-        accessory_variations = create_color_variations(accessory_img, num_accessory_variations, avoid_colors)
-
-        
         combined_images = []
-        for base, accessory in product(base_variations, accessory_variations):
-            combined = Image.alpha_composite(base, accessory)
+        for _ in range(num_unique_images):
+            base_variation = create_color_variations(base_img, 1, avoid_colors)[0]
+            accessory_variation = create_color_variations(accessory_img, 1, avoid_colors)[0]
+            combined = Image.alpha_composite(base_variation, accessory_variation)
             combined_images.append(combined)
 
-        
         end_time = time.time()  
         total_time = end_time - start_time
 
-        st.success(f"Generated {len(combined_images)} valid combinations in {total_time:.2f} seconds!")
+        st.success(f"Generated {len(combined_images)} unique nfts in {total_time:.2f} seconds!")
         zip_buffer = save_images_to_zip(combined_images)
         st.download_button(
             "Download All Combinations as ZIP",
